@@ -16,8 +16,7 @@ module RailsAdmin
             state = bindings[:object].send(name)
             state_class = @state_machine_options.state(state)
             ret = [
-              '<div class="label ' + state_class + '">' + bindings[:object].aasm(state_machine_name).human_state + '</div>',
-              '<div style="height: 10px;"></div>'
+              build_current_state_obj(bindings[:object].aasm(state_machine_name).human_state, state_class)
             ]
 
             unless read_only
@@ -37,7 +36,8 @@ module RailsAdmin
                 )
               end
             end
-            ('<div style="white-space: normal;">' + ret.join(' ') + '</div>').html_safe
+
+            build_output(ret)
           end
 
           register_instance_option :formatted_value do
@@ -52,16 +52,15 @@ module RailsAdmin
             state = bindings[:object].send(name)
             state_class = @state_machine_options.state(state)
             ret = [
-              '<div class="label ' + state_class + '">' + bindings[:object].aasm(state_machine_name).human_state + '</div>',
-              '<div style="height: 10px;"></div>'
+              build_current_state_obj(bindings[:object].aasm(state_machine_name).human_state, state_class)
             ]
 
             unless read_only
               bindings[:object].aasm(state_machine_name).events.map(&:name).each do |event|
                 next if @state_machine_options.disabled?(event) || !bindings[:object].send("may_#{event}?")
                 unless bindings[:controller].try(:authorization_adapter).nil?
-                	adapter = bindings[:controller].authorization_adapter
-                	next unless (adapter.authorized?(:state, @abstract_model, bindings[:object]) && (adapter.authorized?(:all_events, @abstract_model, bindings[:object]) || adapter.authorized?(event, @abstract_model, bindings[:object])))
+                  adapter = bindings[:controller].authorization_adapter
+                  next unless (adapter.authorized?(:state, @abstract_model, bindings[:object]) && (adapter.authorized?(:all_events, @abstract_model, bindings[:object]) || adapter.authorized?(event, @abstract_model, bindings[:object])))
                 end
                 event_class = @state_machine_options.event(event)
                 ret << bindings[:view].link_to(
@@ -76,7 +75,7 @@ module RailsAdmin
               end
             end
 
-            ('<div style="white-space: normal;">' + ret.join(' ') + '</div>').html_safe
+            build_output(ret)
           end
 
           register_instance_option :export_value do
@@ -103,7 +102,12 @@ module RailsAdmin
           register_instance_option :searchable_columns do
             @searchable_columns ||= begin
               if searchable
-                [{column: "#{abstract_model.table_name}.#{name}", type: :string}]
+                [
+                  {
+                    column: "#{abstract_model.table_name}.#{name}",
+                    type: :string
+                  }
+                ]
               else
                 []
               end
@@ -112,6 +116,24 @@ module RailsAdmin
 
           register_instance_option :state_machine_name do
             @state_machine_name || :default
+          end
+
+          private
+
+          def build_current_state_obj(state, state_class)
+            tag = @state_machine_options.current_state_tag
+            style = @state_machine_options.current_state_style
+            "<#{tag} #{style} class='btn btn-mini btn-xs #{state_class}'>#{state}</#{tag}>"
+          end
+
+          def build_output(ret)
+            wrapper_style = @state_machine_options.wrapper_style
+
+            [
+              "<div #{wrapper_style}>",
+              ret.join(' '),
+              '</div>'
+            ].join.html_safe
           end
         end
       end

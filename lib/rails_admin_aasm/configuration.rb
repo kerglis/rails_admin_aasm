@@ -24,7 +24,10 @@ module RailsAdminAasm
             delete: 'btn-danger',
             trash: 'btn-danger',
           },
-          disable: []
+          disable: [],
+          wrapper_style: nil,
+          current_state_tag: nil,
+          current_state_style: nil
       }.merge(config)
       @options
     end
@@ -48,7 +51,20 @@ module RailsAdminAasm
       options[:authorize]
     end
 
+    def wrapper_style
+      options[:wrapper_style] || 'style="white-space: normal;"'
+    end
+
+    def current_state_tag
+      options[:current_state_tag] || 'button'
+    end
+
+    def current_state_style
+      options[:current_state_style] || 'disabled="disabled"'
+    end
+
     protected
+
     def config
       begin
         opt = ::RailsAdmin::Config.model(@abstract_model.model).state
